@@ -5,6 +5,14 @@ const DID_BASE = "did:web:truganic.github.io:did-documents";
 
 export type DidDocumentType = "client" | "server" | "core";
 
+/** Result of key pair generation only (no DID yet). */
+export interface KeyPairOnly {
+  privateKeyHex: string;
+  publicKeyX: string;
+  publicKeyY: string;
+}
+
+/** Full result with DID document (for publish). */
 export interface KeyPairResult {
   privateKeyHex: string;
   publicKeyX: string;
@@ -21,12 +29,23 @@ function buildDid(type: DidDocumentType, id: string): string {
   return `${DID_BASE}:${segment}:${id}`;
 }
 
-export function generateKeyPair(type: DidDocumentType, id: string): KeyPairResult {
+/** Step 1: Generate only the two keys (public + private). */
+export function generateKeysOnly(): KeyPairOnly {
   const keyPair = ec.genKeyPair();
   const privateKeyHex = keyPair.getPrivate("hex");
   const pub = keyPair.getPublic();
   const publicKeyX = pub.getX().toString("hex");
   const publicKeyY = pub.getY().toString("hex");
+  return { privateKeyHex, publicKeyX, publicKeyY };
+}
+
+/** Step 2: Build DID document from existing keys + type + id. */
+export function buildDidDocumentFromKeys(
+  publicKeyX: string,
+  publicKeyY: string,
+  type: DidDocumentType,
+  id: string
+): { did: string; didDocument: Record<string, unknown> } {
   const did = buildDid(type, id);
   const didDocument: Record<string, unknown> = {
     "@context": ["https://www.w3.org/ns/did/v1"],
@@ -46,10 +65,15 @@ export function generateKeyPair(type: DidDocumentType, id: string): KeyPairResul
     ],
     authentication: [`${did}#key-1`],
   };
+  return { did, didDocument };
+}
+
+/** Legacy: generate key pair and DID in one go (for backward compat). */
+export function generateKeyPair(type: DidDocumentType, id: string): KeyPairResult {
+  const keys = generateKeysOnly();
+  const { did, didDocument } = buildDidDocumentFromKeys(keys.publicKeyX, keys.publicKeyY, type, id);
   return {
-    privateKeyHex,
-    publicKeyX,
-    publicKeyY,
+    ...keys,
     did,
     didDocument,
     type,
@@ -57,7 +81,20 @@ export function generateKeyPair(type: DidDocumentType, id: string): KeyPairResul
   };
 }
 
-/** Exact .env format: two lines, no 0x prefix */
-export function toEnvSnippet(did: string, privateKeyHex: string): string {
-  return `CLIENT_DID=${did}\nCLIENT_PRIVATE_KEY=${privateKeyHex}`;
+const ENV_KEYS: Record<DidDocumentType, { did: string; privateKey: string }> = {
+  client: { did: "CLIENT_DID", privateKey: "CLIENT_PRIVATE_KEY" },
+  server: { did: "SERVER_DID", privateKey: "SERVER_PRIVATE_KEY" },
+  core: { did: "CORE_DID", privateKey: "CORE_PRIVATE_KEY" },
+};
+
+/** Exact .env format: two lines, no 0x prefix. Key names depend on type. */
+export function toEnvSnippet(did: string, privateKeyHex: string, type: DidDocumentType): string {
+  const { did: didKey, privateKey: pkKey } = ENV_KEYS[type];
+  return `${didKey}=${did}\n${pkKey}=${privateKeyHex}`;
+}
+
+/** Masked .env snippet for display (private key as dots). */
+export function toEnvSnippetMasked(did: string, type: DidDocumentType): string {
+  const { did: didKey, privateKey: pkKey } = ENV_KEYS[type];
+  return `${didKey}=${did}\n${pkKey}=${"•".repeat(64)}`;
 }
