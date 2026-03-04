@@ -5,16 +5,6 @@ const DID_BASE = "did:web:truganic.github.io:did-documents";
 
 export type DidDocumentType = "client" | "server" | "core";
 
-/** JWK requires base64url-encoded coordinates (RFC 7517). did-jwt expects this. */
-function hexToBase64Url(hex: string): string {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  let binary = "";
-  bytes.forEach((b) => (binary += String.fromCharCode(b)));
-  const base64 = btoa(binary);
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
 /** Result of key pair generation only (no DID yet). */
 export interface KeyPairOnly {
   privateKeyHex: string;
@@ -39,17 +29,25 @@ function buildDid(type: DidDocumentType, id: string): string {
   return `${DID_BASE}:${segment}:${id}`;
 }
 
-/** Step 1: Generate only the two keys (public + private). */
+const COORD_BYTES = 32; // secp256k1
+
+/** Bytes (big-endian) to base64url for JWK (RFC 7517). */
+function bytesToBase64Url(bytes: number[]): string {
+  const binary = String.fromCharCode(...bytes);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/** Step 1: Generate only the two keys (public + private). Public X/Y are base64url for JWK. */
 export function generateKeysOnly(): KeyPairOnly {
   const keyPair = ec.genKeyPair();
   const privateKeyHex = keyPair.getPrivate("hex");
   const pub = keyPair.getPublic();
-  const publicKeyX = pub.getX().toString("hex");
-  const publicKeyY = pub.getY().toString("hex");
+  const publicKeyX = bytesToBase64Url(pub.getX().toArray("be", COORD_BYTES));
+  const publicKeyY = bytesToBase64Url(pub.getY().toArray("be", COORD_BYTES));
   return { privateKeyHex, publicKeyX, publicKeyY };
 }
 
-/** Step 2: Build DID document from existing keys + type + id. */
+/** Step 2: Build DID document from existing keys + type + id. Expects publicKeyX/Y as base64url (from generateKeysOnly). */
 export function buildDidDocumentFromKeys(
   publicKeyX: string,
   publicKeyY: string,
@@ -68,8 +66,8 @@ export function buildDidDocumentFromKeys(
         publicKeyJwk: {
           kty: "EC",
           crv: "secp256k1",
-          x: hexToBase64Url(publicKeyX),
-          y: hexToBase64Url(publicKeyY),
+          x: publicKeyX,
+          y: publicKeyY,
         },
       },
     ],
