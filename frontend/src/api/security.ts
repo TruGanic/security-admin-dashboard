@@ -19,6 +19,29 @@ export async function issueVC(body: IssueVCRequest): Promise<{ success: boolean;
   return data;
 }
 
+export interface CurrentVCResponse {
+  success: boolean;
+  vc?: unknown;
+  permissions?: string[];
+  vcId?: string;
+  jws?: string;
+  message?: string;
+}
+
+export async function fetchCurrentVCByDid(
+  did: string
+): Promise<CurrentVCResponse> {
+  const res = await fetch(`${BASE}/api/vc/current?did=${encodeURIComponent(did)}`);
+  const data = await res.json();
+  if (!res.ok) {
+    return {
+      success: false,
+      message: data.message || data.error || "Failed to fetch current VC",
+    };
+  }
+  return data;
+}
+
 export async function revokeVC(vcId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
   const res = await fetch(`${BASE}/api/vc/revoke`, {
     method: "POST",

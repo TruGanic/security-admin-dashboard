@@ -539,6 +539,105 @@
   appearance: auto;
 }
 
+/* Simple form row for 2-up layout */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.form-row .input-group {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Permission chips (Issue VC) */
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.permission-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.permission-chip:hover {
+  border-color: var(--text-muted);
+}
+
+.permission-chip:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(0, 255, 136, 0.08);
+}
+
+.permission-chip input {
+  width: auto;
+  margin: 0;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.permission-chip-label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.permission-chip-desc {
+  width: 100%;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.5rem;
+}
+
+/* Permissions reference (dashboard) */
+.permissions-reference-section {
+  margin-bottom: 1.25rem;
+}
+
+.permissions-reference-section:last-child {
+  margin-bottom: 0;
+}
+
+.permissions-reference-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.permissions-reference-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.permissions-reference-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.permissions-reference-tag {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  font-family: var(--font-mono, monospace);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+}
+
 /* Modern dropdown component */
 .dropdown-wrap {
   position: relative;

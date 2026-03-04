@@ -5,6 +5,16 @@ const DID_BASE = "did:web:truganic.github.io:did-documents";
 
 export type DidDocumentType = "client" | "server" | "core";
 
+/** JWK requires base64url-encoded coordinates (RFC 7517). did-jwt expects this. */
+function hexToBase64Url(hex: string): string {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+  let binary = "";
+  bytes.forEach((b) => (binary += String.fromCharCode(b)));
+  const base64 = btoa(binary);
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 /** Result of key pair generation only (no DID yet). */
 export interface KeyPairOnly {
   privateKeyHex: string;
@@ -58,8 +68,8 @@ export function buildDidDocumentFromKeys(
         publicKeyJwk: {
           kty: "EC",
           crv: "secp256k1",
-          x: publicKeyX,
-          y: publicKeyY,
+          x: hexToBase64Url(publicKeyX),
+          y: hexToBase64Url(publicKeyY),
         },
       },
     ],
