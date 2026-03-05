@@ -1,3 +1,4 @@
+import { Buffer } from "buffer";
 import { ec as EC } from "elliptic";
 
 const ec = new EC("secp256k1");
@@ -29,21 +30,28 @@ function buildDid(type: DidDocumentType, id: string): string {
   return `${DID_BASE}:${segment}:${id}`;
 }
 
-const COORD_BYTES = 32; // secp256k1
-
-/** Bytes (big-endian) to base64url for JWK (RFC 7517). */
-function bytesToBase64Url(bytes: number[]): string {
-  const binary = String.fromCharCode(...bytes);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+/** Base64url for JWK (same as demo-client-app-1 generate-demo-keys-base64). */
+function bufferToBase64Url(buffer: Buffer): string {
+  return buffer
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, ""); // Remove padding
 }
 
-/** Step 1: Generate only the two keys (public + private). Public X/Y are base64url for JWK. */
+/** Step 1: Generate only the two keys (public + private). Public X/Y are base64url for JWK (exact same as demo generate-demo-keys-base64). */
 export function generateKeysOnly(): KeyPairOnly {
   const keyPair = ec.genKeyPair();
   const privateKeyHex = keyPair.getPrivate("hex");
-  const pub = keyPair.getPublic();
-  const publicKeyX = bytesToBase64Url(pub.getX().toArray("be", COORD_BYTES));
-  const publicKeyY = bytesToBase64Url(pub.getY().toArray("be", COORD_BYTES));
+  const publicKey = keyPair.getPublic();
+
+  // Get X and Y coordinates as Buffers (32 bytes each) — same as demo
+  const xBuffer = publicKey.getX().toArrayLike(Buffer, "be", 32);
+  const yBuffer = publicKey.getY().toArrayLike(Buffer, "be", 32);
+
+  const publicKeyX = bufferToBase64Url(xBuffer as Buffer);
+  const publicKeyY = bufferToBase64Url(yBuffer as Buffer);
+
   return { privateKeyHex, publicKeyX, publicKeyY };
 }
 
