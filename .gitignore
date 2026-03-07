@@ -9,6 +9,7 @@ node_modules/
 # Build outputs
 frontend/dist/
 backend/dist/
+backend/public/
 
 # Logs
 *.log

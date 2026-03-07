@@ -1,10 +1,12 @@
 import "dotenv/config";
+import path from "path";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { publishDid, listDidIds, type DidDocumentType } from "./github";
 
 const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:5173" }));
+const isProduction = process.env.NODE_ENV === "production";
+app.use(cors({ origin: process.env.CORS_ORIGIN || (isProduction ? undefined : "http://localhost:5173") }));
 app.use(express.json({ limit: "512kb" }));
 
 app.get("/health", (_req: Request, res: Response) => {
@@ -54,6 +56,15 @@ app.post("/api/publish-did", async (req: Request, res: Response) => {
     });
   }
 });
+
+// In production, serve frontend static files and SPA fallback
+if (isProduction) {
+  const publicDir = path.join(__dirname, "..", "public");
+  app.use(express.static(publicDir));
+  app.get("*", (_req: Request, res: Response) => {
+    res.sendFile(path.join(publicDir, "index.html"));
+  });
+}
 
 const PORT = parseInt(process.env.PORT || "3100", 10);
 app.listen(PORT, () => {
