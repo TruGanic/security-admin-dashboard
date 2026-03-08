@@ -8,6 +8,7 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || "http://129.212.238.68:5173" }
 app.use(express.json({ limit: "512kb" }));
 
 const LIFECYCLE_SERVICE_URL = process.env.LIFECYCLE_SERVICE_URL || "http://129.212.238.68:3003";
+const GATEWAY_URL = process.env.GATEWAY_URL || "http://129.212.238.68:3000";
 
 app.get("/health", (_req: Request, res: Response) => {
   res.json({ service: "security-admin-dashboard-backend", status: "active" });
@@ -43,6 +44,45 @@ app.get("/api/sla/metrics", async (_req: Request, res: Response) => {
     res.status(503).json({
       error: "Lifecycle service unavailable",
       services: [],
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** Proxy to Gateway request audit log (who requested what, granted/denied) */
+app.get("/api/audit/recent", async (req: Request, res: Response) => {
+  try {
+    const params = new URLSearchParams();
+    if (req.query.limit) params.set("limit", String(req.query.limit));
+    if (req.query.page) params.set("page", String(req.query.page));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const r = await fetch(`${GATEWAY_URL}/api/audit/recent${qs}`, {
+      headers: { Accept: "application/json" },
+    });
+    const text = await r.text();
+    if (!r.ok) {
+      try {
+        return res.status(r.status).json(JSON.parse(text));
+      } catch {
+        return res.status(r.status).json({ error: "Gateway error", body: text.slice(0, 200) });
+      }
+    }
+    try {
+      const data = JSON.parse(text);
+      res.json(data);
+    } catch {
+      console.error("Audit proxy: Gateway returned non-JSON (check GATEWAY_URL)");
+      res.status(503).json({
+        error: "Gateway returned invalid response; ensure GATEWAY_URL points to the Gateway API",
+        entries: [],
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (e) {
+    console.error("Audit proxy error:", e);
+    res.status(503).json({
+      error: "Gateway unavailable",
+      entries: [],
       timestamp: new Date().toISOString(),
     });
   }

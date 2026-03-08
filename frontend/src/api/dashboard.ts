@@ -30,6 +30,42 @@ export async function fetchSlaMetrics(): Promise<SlaMetricsResponse | null> {
   }
 }
 
+/** Request audit entry (Gateway: who requested what, granted/denied) */
+export interface AuditEntry {
+  did: string | null;
+  method: string;
+  path: string;
+  granted: boolean;
+  reason?: string;
+  timestamp: string;
+}
+
+export interface AuditRecentResponse {
+  entries: AuditEntry[];
+  count: number;
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  timestamp: string;
+  hint?: string;
+}
+
+export async function fetchAuditRecent(
+  limit = 10,
+  page = 1
+): Promise<AuditRecentResponse | null> {
+  try {
+    const params = new URLSearchParams({ limit: String(limit), page: String(page) });
+    const res = await fetch(`${BASE}/api/audit/recent?${params.toString()}`);
+    const data = (await res.json()) as AuditRecentResponse & { error?: string };
+    if (!res.ok) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch IDs from did-documents repo for the given type (clients/, servers/, or core). */
 export async function fetchDidIds(type: DidDocumentType): Promise<string[]> {
   try {

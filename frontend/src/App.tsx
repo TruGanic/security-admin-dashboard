@@ -6,6 +6,7 @@ import {
   IssueVC,
   RevokeVC,
   AvailabilityMetrics,
+  RequestAudit,
 } from "./components";
 import "./styles/layout.css";
 
@@ -19,6 +20,7 @@ export default function App() {
       {activeNav === "issue-vc" && <IssueVC />}
       {activeNav === "revoke-vc" && <RevokeVC />}
       {activeNav === "availability" && <AvailabilityMetrics />}
+      {activeNav === "request-audit" && <RequestAudit />}
     </MainLayout>
   );
 }
