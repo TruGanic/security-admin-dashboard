@@ -1,6 +1,6 @@
-import { LayoutDashboard, KeyRound, FileBadge, FileX, Menu } from "lucide-react";
+import { LayoutDashboard, KeyRound, FileBadge, FileX, Activity, Menu } from "lucide-react";
 
-export type NavId = "dashboard" | "key-did" | "issue-vc" | "revoke-vc";
+export type NavId = "dashboard" | "key-did" | "issue-vc" | "revoke-vc" | "availability";
 
 interface SidebarProps {
   active: NavId;
@@ -12,6 +12,7 @@ const navItems: { id: NavId; label: string; Icon: typeof LayoutDashboard }[] = [
   { id: "key-did", label: "Key & DID", Icon: KeyRound },
   { id: "issue-vc", label: "Issue VC", Icon: FileBadge },
   { id: "revoke-vc", label: "Revoke VC", Icon: FileX },
+  { id: "availability", label: "Availability", Icon: Activity },
 ];
 
 export function Sidebar({ active, onNavigate }: SidebarProps) {
