@@ -2,8 +2,6 @@
 
 Admin UI for zero-trust bootstrap: generate keys, publish DIDs to GitHub, issue and revoke VCs.
 
-**Deploying to a droplet:** see [docs/DEPLOYMENT_DROPLET.md](docs/DEPLOYMENT_DROPLET.md). A GitHub Actions workflow deploys on push of a `v*` tag (e.g. `v1.0.0`).
-
 ## Structure
 
 - **frontend/** – Vite + React (dark theme). Key Gen, Publish DID, Issue VC, Revoke VC.
