@@ -7,7 +7,7 @@ const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || "http://129.212.238.68:5173" }));
 app.use(express.json({ limit: "512kb" }));
 
-const LIFECYCLE_SERVICE_URL = process.env.LIFECYCLE_SERVICE_URL || "http://localhost:3003";
+const LIFECYCLE_SERVICE_URL = process.env.LIFECYCLE_SERVICE_URL || "http://129.212.238.68:3003";
 
 app.get("/health", (_req: Request, res: Response) => {
   res.json({ service: "security-admin-dashboard-backend", status: "active" });
