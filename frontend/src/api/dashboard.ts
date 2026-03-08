@@ -66,6 +66,31 @@ export async function fetchAuditRecent(
   }
 }
 
+/** Aggregated audit stats for dashboard overview */
+export interface AuditStats {
+  totalRequests: number;
+  get: number;
+  post: number;
+  put: number;
+  patch: number;
+  delete: number;
+  other: number;
+  granted: number;
+  denied: number;
+  timestamp: string;
+}
+
+export async function fetchAuditStats(): Promise<AuditStats | null> {
+  try {
+    const res = await fetch(`${BASE}/api/audit/stats`);
+    const data = (await res.json()) as AuditStats & { error?: string };
+    if (!res.ok) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch IDs from did-documents repo for the given type (clients/, servers/, or core). */
 export async function fetchDidIds(type: DidDocumentType): Promise<string[]> {
   try {

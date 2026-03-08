@@ -1,16 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { fetchAuditRecent, type AuditEntry } from "../api/dashboard";
 import "../styles/layout.css";
 
 const PAGE_SIZES = [10, 25, 50, 100];
-
-// Row padding by page size: 10 = bigger rows, 25 = medium, 50/100 = compact
-function getRowPadding(pageSize: number): string {
-  if (pageSize <= 10) return "0.85rem 1rem";
-  if (pageSize <= 25) return "0.65rem 0.85rem";
-  return "0.5rem 0.75rem";
-}
 
 export function RequestAudit() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
@@ -23,17 +16,16 @@ export function RequestAudit() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  const load = useCallback(async (pageNum: number, size: number) => {
+  const load = async () => {
     setLoading(true);
     setError(null);
     setHint(null);
-    const result = await fetchAuditRecent(size, pageNum);
+    const result = await fetchAuditRecent(pageSize, page);
     if (result) {
       setEntries(result.entries);
       setTimestamp(result.timestamp);
-      const t = result.total ?? 0;
-      setTotal(t);
-      setTotalPages(result.totalPages ?? Math.max(1, Math.ceil(t / size)));
+      setTotal(result.total ?? 0);
+      setTotalPages(result.totalPages ?? 1);
       if (result.hint) setHint(result.hint);
     } else {
       setError("Could not load audit log. Is the Gateway running and REDIS_URL set?");
@@ -42,16 +34,16 @@ export function RequestAudit() {
       setTotalPages(0);
     }
     setLoading(false);
-  }, []);
+  };
 
   useEffect(() => {
-    load(page, pageSize);
-  }, [page, pageSize, load]);
+    load();
+  }, [page, pageSize]);
 
   useEffect(() => {
-    const interval = setInterval(() => load(page, pageSize), 15_000);
+    const interval = setInterval(load, 15_000);
     return () => clearInterval(interval);
-  }, [page, pageSize, load]);
+  }, [page, pageSize]);
 
   return (
     <div>
@@ -69,7 +61,7 @@ export function RequestAudit() {
       {error && entries.length === 0 && (
         <div className="card" style={{ borderColor: "var(--danger)" }}>
           <p style={{ color: "var(--danger)" }}>{error}</p>
-          <button type="button" className="btn btn-secondary" onClick={() => load(page, pageSize)} style={{ marginTop: "0.75rem" }}>
+          <button type="button" className="btn btn-secondary" onClick={load} style={{ marginTop: "0.75rem" }}>
             <RefreshCw size={16} /> Retry
           </button>
         </div>
@@ -92,7 +84,7 @@ export function RequestAudit() {
                   ))}
                 </select>
               </label>
-              <button type="button" className="btn btn-secondary" onClick={() => load(page, pageSize)} disabled={loading}>
+              <button type="button" className="btn btn-secondary" onClick={load} disabled={loading}>
                 <RefreshCw size={16} /> Refresh
               </button>
             </div>
@@ -107,42 +99,41 @@ export function RequestAudit() {
               Showing {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, total)} of {total}
             </p>
           )}
-
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: pageSize <= 10 ? "0.95rem" : pageSize <= 25 ? "0.9rem" : "0.875rem" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", textAlign: "left" }}>
-                  <th style={{ padding: getRowPadding(pageSize), color: "var(--text-muted)", fontWeight: 600 }}>Time</th>
-                  <th style={{ padding: getRowPadding(pageSize), color: "var(--text-muted)", fontWeight: 600 }}>From (DID)</th>
-                  <th style={{ padding: getRowPadding(pageSize), color: "var(--text-muted)", fontWeight: 600 }}>Method</th>
-                  <th style={{ padding: getRowPadding(pageSize), color: "var(--text-muted)", fontWeight: 600 }}>Path</th>
-                  <th style={{ padding: getRowPadding(pageSize), color: "var(--text-muted)", fontWeight: 600 }}>Result</th>
-                  <th style={{ padding: getRowPadding(pageSize), color: "var(--text-muted)", fontWeight: 600 }}>Reason</th>
+                  <th style={{ padding: "0.5rem 0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Time</th>
+                  <th style={{ padding: "0.5rem 0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>From (DID)</th>
+                  <th style={{ padding: "0.5rem 0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Method</th>
+                  <th style={{ padding: "0.5rem 0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Path</th>
+                  <th style={{ padding: "0.5rem 0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Result</th>
+                  <th style={{ padding: "0.5rem 0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Reason</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((e, i) => (
                   <tr key={`${e.timestamp}-${i}`} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td style={{ padding: getRowPadding(pageSize), color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
                       {new Date(e.timestamp).toLocaleString()}
                     </td>
-                    <td style={{ padding: getRowPadding(pageSize), color: "var(--text-primary)", wordBreak: "break-all", maxWidth: "200px" }}>
+                    <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-primary)", wordBreak: "break-all", maxWidth: "200px" }}>
                       {e.did ?? "—"}
                     </td>
-                    <td style={{ padding: getRowPadding(pageSize) }}>
+                    <td style={{ padding: "0.5rem 0.75rem" }}>
                       <code style={{ fontSize: "0.8em", background: "var(--input-bg)", padding: "0.2rem 0.4rem", borderRadius: "4px" }}>
                         {e.method}
                       </code>
                     </td>
-                    <td style={{ padding: getRowPadding(pageSize), color: "var(--text-secondary)", wordBreak: "break-all", maxWidth: "280px" }}>
+                    <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-secondary)", wordBreak: "break-all", maxWidth: "280px" }}>
                       {e.path}
                     </td>
-                    <td style={{ padding: getRowPadding(pageSize) }}>
+                    <td style={{ padding: "0.5rem 0.75rem" }}>
                       <span className={`pill ${e.granted ? "pill-success" : "pill-error"}`}>
                         {e.granted ? "Granted" : "Denied"}
                       </span>
                     </td>
-                    <td style={{ padding: getRowPadding(pageSize), color: "var(--text-muted)", fontSize: "0.8rem", maxWidth: "180px" }}>
+                    <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-muted)", fontSize: "0.8rem", maxWidth: "180px" }}>
                       {e.reason ?? "—"}
                     </td>
                   </tr>
@@ -162,9 +153,8 @@ export function RequestAudit() {
             </div>
           )}
 
-          {/* Bottom pagination: Back / Page N of M / Next */}
           {(entries.length > 0 || total > 0) && (
-            <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border)", flexWrap: "wrap", gap: "0.5rem" }} aria-label="Audit pagination">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border)", flexWrap: "wrap", gap: "0.5rem" }}>
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -175,18 +165,18 @@ export function RequestAudit() {
                 <ChevronLeft size={16} /> Back
               </button>
               <span style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>
-                Page {page} of {Math.max(1, totalPages)}
+                Page {page} of {totalPages || 1}
               </span>
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => setPage((p) => Math.min(Math.max(1, totalPages), p + 1))}
-                disabled={loading || page >= Math.max(1, totalPages)}
+                onClick={() => setPage((p) => Math.min(totalPages || 1, p + 1))}
+                disabled={loading || page >= (totalPages || 1)}
                 aria-label="Next page"
               >
                 Next <ChevronRight size={16} />
               </button>
-            </nav>
+            </div>
           )}
         </div>
       )}

@@ -49,6 +49,53 @@ app.get("/api/sla/metrics", async (_req: Request, res: Response) => {
   }
 });
 
+/** Proxy to Gateway audit stats (aggregated counts for dashboard overview) */
+app.get("/api/audit/stats", async (_req: Request, res: Response) => {
+  try {
+    const r = await fetch(`${GATEWAY_URL}/api/audit/stats`, { headers: { Accept: "application/json" } });
+    const text = await r.text();
+    if (!r.ok) {
+      try {
+        return res.status(r.status).json(JSON.parse(text));
+      } catch {
+        return res.status(r.status).json({ error: "Gateway error", body: text.slice(0, 200) });
+      }
+    }
+    try {
+      res.json(JSON.parse(text));
+    } catch {
+      res.status(503).json({
+        error: "Gateway returned invalid response",
+        totalRequests: 0,
+        get: 0,
+        post: 0,
+        put: 0,
+        patch: 0,
+        delete: 0,
+        other: 0,
+        granted: 0,
+        denied: 0,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (e) {
+    console.error("Audit stats proxy error:", e);
+    res.status(503).json({
+      error: "Gateway unavailable",
+      totalRequests: 0,
+      get: 0,
+      post: 0,
+      put: 0,
+      patch: 0,
+      delete: 0,
+      other: 0,
+      granted: 0,
+      denied: 0,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 /** Proxy to Gateway request audit log (who requested what, granted/denied) */
 app.get("/api/audit/recent", async (req: Request, res: Response) => {
   try {

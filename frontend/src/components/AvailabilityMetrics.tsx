@@ -1,7 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Activity, RefreshCw } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { fetchSlaMetrics, type SlaMetricsResponse } from "../api/dashboard";
 import "../styles/layout.css";
+
+/* Tooltip: clear text on dark card background (Recharts defaults to black text) */
+const CHART_TOOLTIP_STYLE = {
+  contentStyle: {
+    background: "var(--bg-card)",
+    border: "1px solid var(--border)",
+    borderRadius: "8px",
+    padding: "10px 12px",
+    color: "#F9FAFB",
+  } as React.CSSProperties,
+  labelStyle: { color: "#D1D5DB", fontSize: 12 } as React.CSSProperties,
+  itemStyle: { color: "#F9FAFB", fontSize: 13, fontWeight: 600 } as React.CSSProperties,
+};
 
 export function AvailabilityMetrics() {
   const [data, setData] = useState<SlaMetricsResponse | null>(null);
@@ -22,6 +45,17 @@ export function AvailabilityMetrics() {
     const interval = setInterval(load, 30_000);
     return () => clearInterval(interval);
   }, []);
+
+  const serviceBarData = useMemo(() => {
+    if (!data?.services?.length) return [];
+    return data.services.map((s) => ({
+      name: s.label,
+      successPercent: Number(Number(s.uptimePercent).toFixed(2)),
+      failurePercent: Number((100 - Number(s.uptimePercent)).toFixed(2)),
+      status: s.status,
+      samples: s.samples,
+    }));
+  }, [data]);
 
   return (
     <div>
@@ -127,6 +161,42 @@ export function AvailabilityMetrics() {
               <RefreshCw size={16} /> Refresh
             </button>
           </div>
+
+          {/* Bar chart: success & failure % per service (health checks) */}
+          {serviceBarData.length > 0 && (
+            <div className="card" style={{ marginTop: "1.25rem" }}>
+              <h2 className="card-title" style={{ marginBottom: "0.5rem" }}>Per-service success & failure (health checks)</h2>
+              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                One bar per service: green = success % (uptime), red = failure % (downtime). Based on the same health check samples as above.
+              </p>
+              <div style={{ width: "100%", height: Math.max(320, serviceBarData.length * 48) }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={serviceBarData}
+                    margin={{ top: 12, right: 24, left: 8, bottom: 8 }}
+                    layout="vertical"
+                    barCategoryGap="14%"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
+                    <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fill: "var(--text-muted)", fontSize: 11 }} stroke="var(--border)" />
+                    <YAxis type="category" dataKey="name" width={120} tick={{ fill: "var(--text-muted)", fontSize: 11 }} stroke="var(--border)" />
+                    <Tooltip
+                      contentStyle={CHART_TOOLTIP_STYLE.contentStyle}
+                      labelStyle={CHART_TOOLTIP_STYLE.labelStyle}
+                      itemStyle={CHART_TOOLTIP_STYLE.itemStyle}
+                      formatter={(value: number) => [`${value}%`, ""]}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "0.85rem" }}
+                      formatter={(value) => <span style={{ color: "var(--text-secondary)" }}>{value}</span>}
+                    />
+                    <Bar dataKey="successPercent" name="Success %" fill="#00E07A" radius={[0, 4, 4, 0]} stackId="a" maxBarSize={24} />
+                    <Bar dataKey="failurePercent" name="Failure %" fill="#F87171" radius={[0, 4, 4, 0]} stackId="a" maxBarSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -29,6 +29,16 @@
 
   /* Inputs (slightly lighter than card for contrast) */
   --input-bg: #111827;
+
+  /* Chart palette – theme-aligned, clear and eye-friendly on dark */
+  --chart-success: #00E07A;
+  --chart-failure: #F87171;
+  --chart-get: #60A5FA;
+  --chart-post: #00E07A;
+  --chart-put: #8B5CF6;
+  --chart-patch: #F59E0B;
+  --chart-delete: #F87171;
+  --chart-other: #6B7280;
 }
 
 * {
