@@ -4,11 +4,48 @@ import cors from "cors";
 import { publishDid, listDidIds, type DidDocumentType } from "./github";
 
 const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:5173" }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || "http://129.212.238.68:5173" }));
 app.use(express.json({ limit: "512kb" }));
+
+const LIFECYCLE_SERVICE_URL = process.env.LIFECYCLE_SERVICE_URL || "http://localhost:3003";
 
 app.get("/health", (_req: Request, res: Response) => {
   res.json({ service: "security-admin-dashboard-backend", status: "active" });
+});
+
+/** Proxy to Lifecycle SLA metrics (platform availability / research component) */
+app.get("/api/sla/metrics", async (_req: Request, res: Response) => {
+  try {
+    const r = await fetch(`${LIFECYCLE_SERVICE_URL}/api/sla/metrics`, {
+      headers: { Accept: "application/json" },
+    });
+    const text = await r.text();
+    if (!r.ok) {
+      try {
+        return res.status(r.status).json(JSON.parse(text));
+      } catch {
+        return res.status(r.status).json({ error: "Lifecycle error", body: text.slice(0, 200) });
+      }
+    }
+    try {
+      const data = JSON.parse(text);
+      res.json(data);
+    } catch {
+      console.error("SLA metrics proxy: Lifecycle returned non-JSON (check LIFECYCLE_SERVICE_URL)");
+      res.status(503).json({
+        error: "Lifecycle service returned invalid response; ensure LIFECYCLE_SERVICE_URL points to the Lifecycle API (e.g. http://host:3003)",
+        services: [],
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (e) {
+    console.error("SLA metrics proxy error:", e);
+    res.status(503).json({
+      error: "Lifecycle service unavailable",
+      services: [],
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 app.get("/api/did/ids", async (req: Request, res: Response) => {

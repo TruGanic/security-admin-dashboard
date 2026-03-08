@@ -2,6 +2,34 @@ const BASE = import.meta.env.VITE_DASHBOARD_API_URL || "http://localhost:3100";
 
 export type DidDocumentType = "client" | "server" | "core";
 
+/** SLA / platform availability metrics (research component) */
+export interface SlaServiceMetric {
+  id: string;
+  label: string;
+  uptimePercent: number;
+  lastChecked: string | null;
+  status: "up" | "down" | "unknown";
+  samples: number;
+}
+
+export interface SlaMetricsResponse {
+  services: SlaServiceMetric[];
+  platformUptimePercent: number;
+  timestamp: string;
+  windowMinutes: number;
+}
+
+export async function fetchSlaMetrics(): Promise<SlaMetricsResponse | null> {
+  try {
+    const res = await fetch(`${BASE}/api/sla/metrics`);
+    const data = (await res.json()) as SlaMetricsResponse & { error?: string };
+    if (!res.ok) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch IDs from did-documents repo for the given type (clients/, servers/, or core). */
 export async function fetchDidIds(type: DidDocumentType): Promise<string[]> {
   try {

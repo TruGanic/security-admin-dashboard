@@ -5,6 +5,7 @@ import {
   KeyGen,
   IssueVC,
   RevokeVC,
+  AvailabilityMetrics,
 } from "./components";
 import "./styles/layout.css";
 
@@ -17,6 +18,7 @@ export default function App() {
       {activeNav === "key-did" && <KeyGen />}
       {activeNav === "issue-vc" && <IssueVC />}
       {activeNav === "revoke-vc" && <RevokeVC />}
+      {activeNav === "availability" && <AvailabilityMetrics />}
     </MainLayout>
   );
 }
