@@ -29,15 +29,23 @@ Or copy the `security-admin-dashboard` folder to the droplet with **scp** or **r
 
 ---
 
-## 3. Backend on the droplet
+## 3. Install dependencies and build
 
 ```bash
-cd security-admin-dashboard/backend
-npm install
-npm run build
+cd security-admin-dashboard
+
+# Backend
+cd backend && npm install && npm run build && cd ..
+
+# Frontend
+cd frontend && npm install && cd ..
 ```
 
-Create `.env` in `backend/` (replace with your values):
+---
+
+## 4. Configure environment
+
+**Backend** – Create or edit `backend/.env` (replace with your values):
 
 ```env
 PORT=3100
@@ -48,54 +56,49 @@ GITHUB_REPO=truganic/did-documents
 BASE_PATH=
 ```
 
-Start the backend (and keep it running):
-
-```bash
-npm start
-```
-
-To run in background (install pm2 first: `npm install -g pm2`):
-
-```bash
-pm2 start dist/server.js --name dashboard-backend
-pm2 save
-pm2 startup
-```
-
----
-
-## 4. Frontend on the droplet
-
-Open a **new terminal** (or use another session):
-
-```bash
-cd security-admin-dashboard/frontend
-npm install
-```
-
-Create or edit `.env` in `frontend/`:
+**Frontend** – Create or edit `frontend/.env`:
 
 ```env
 VITE_SECURITY_SERVICE_URL=http://129.212.238.68:3001
 VITE_DASHBOARD_API_URL=http://129.212.238.68:3100
 ```
 
-Start the frontend:
+---
+
+## 5. Run with PM2
+
+Install PM2 globally (once per droplet):
 
 ```bash
-npm run dev
+npm install -g pm2
 ```
 
-To run in background with pm2:
+From the **security-admin-dashboard** folder (repo root):
 
 ```bash
-pm2 start "npm run dev" --name dashboard-frontend --cwd $(pwd)
+cd security-admin-dashboard
+pm2 start ecosystem.config.cjs
+```
+
+Useful PM2 commands:
+
+```bash
+pm2 status                    # list apps
+pm2 logs                      # all logs
+pm2 logs dashboard-backend    # backend only
+pm2 logs dashboard-frontend   # frontend only
+pm2 restart all               # restart both
+pm2 stop all                  # stop both
+pm2 delete all                # remove from pm2
+
+# Persist across reboots
 pm2 save
+pm2 startup                   # run the command it prints (once)
 ```
 
 ---
 
-## 5. Open firewall ports
+## 6. Open firewall ports
 
 On the droplet:
 
@@ -110,7 +113,7 @@ If you use **DigitalOcean Cloud Firewall**, add inbound rules for **5173** and *
 
 ---
 
-## 6. Access the app
+## 7. Access the app
 
 - Frontend: **http://129.212.238.68:5173**
 - Backend health: **http://129.212.238.68:3100/health**
@@ -123,10 +126,11 @@ If you use **DigitalOcean Cloud Firewall**, add inbound rules for **5173** and *
 |------|------------|
 | 1 | Install Node.js on droplet |
 | 2 | Clone or copy `security-admin-dashboard` to droplet |
-| 3 | Backend: `npm install` → `npm run build` → set `.env` (CORS_ORIGIN, GITHUB_TOKEN, etc.) → `npm start` (or pm2) |
-| 4 | Frontend: `npm install` → set `.env` (VITE_DASHBOARD_API_URL with droplet IP) → `npm run dev` (or pm2) |
-| 5 | Open ports 5173 and 3100 in firewall |
-| 6 | Open http://129.212.238.68:5173 in browser |
+| 3 | In `backend/`: `npm install` and `npm run build`. In `frontend/`: `npm install`. |
+| 4 | Set `backend/.env` and `frontend/.env` (see section 4). |
+| 5 | From repo root: `pm2 start ecosystem.config.cjs` then `pm2 save` and `pm2 startup`. |
+| 6 | Open firewall ports 5173 and 3100. |
+| 7 | Open http://129.212.238.68:5173 in browser. |
 
 ---
 
